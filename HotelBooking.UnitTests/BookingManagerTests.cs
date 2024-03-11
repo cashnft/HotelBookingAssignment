@@ -17,8 +17,7 @@ namespace HotelBooking.UnitTests
         private IBookingManager bookingManager;
         IRepository<Booking> bookingRepository;
 
-        Mock<IRepository<Room>> roomRepoMock;
-        Mock<IRepository<Booking>> bookingRepoMock;
+ 
 
 
         public BookingManagerTests(){
@@ -27,12 +26,6 @@ namespace HotelBooking.UnitTests
             bookingRepository = new FakeBookingRepository(start, end);
             IRepository<Room> roomRepository = new FakeRoomRepository();
             bookingManager = new BookingManager(bookingRepository, roomRepository);
-
-            // setup mocking framework
-            roomRepoMock = new Mock<IRepository<Room>>();
-
-
-            bookingRepoMock = new Mock<IRepository<Booking>>();
 
         }
 
@@ -135,6 +128,45 @@ namespace HotelBooking.UnitTests
             // Assert
             Assert.Equal(expectedCount, result.Count);
             // Add more assertions as needed
+        }
+
+
+
+        [Fact]
+        public void CreateBooking_BookingAvailable_AddsBooking()
+        {
+            // Arrange
+            // create booking for the mock
+            var booking = new Booking
+            {
+                StartDate = DateTime.Now.AddDays(3),
+                EndDate = DateTime.Now.AddDays(5)
+            };
+
+            // create room for the mock
+            var room = new Room();
+            room.Description = "TestRoom";
+            room.Id = 0;
+            List<Room> rooms = [room];
+
+            // initialize the mock
+            var roomRepositoryMock = new Mock<IRepository<Room>>();
+            var bookingRepositoryMock = new Mock<IRepository<Booking>>();
+
+            roomRepositoryMock.Setup(repo => repo.GetAll()).Returns(rooms);
+            bookingRepositoryMock.Setup(repo => repo.Add(It.IsAny<Booking>()));
+            bookingRepositoryMock.Setup(repo => repo.GetAll()).Returns(new List<Booking>());
+
+            var bookingManager = new BookingManager(bookingRepositoryMock.Object, roomRepositoryMock.Object);
+
+            // Act
+            bool result = bookingManager.CreateBooking(booking);
+
+            // Assert
+            Assert.True(result); // Booking should be created successfully
+
+            // Verify that bookingRepository.Add() was called with the correct argument
+            bookingRepositoryMock.Verify(repo => repo.Add(booking), Times.Once);
         }
 
     }
